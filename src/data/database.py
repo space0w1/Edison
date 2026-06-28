@@ -3,6 +3,7 @@ from datetime import datetime
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from src.config.db_config import DATABASE_URL
 
 class Base:
     pass
@@ -28,7 +29,8 @@ class ForwardPrice(Base):
 
 class Database:
     def __init__(self, db_url):
-        self.engine = create_engine(db_url)
+        # pool_pre_ping ensures stale connections are automatically dropped/reconnected
+        self.engine = create_engine(db_url, pool_pre_ping=True)
         self.Session = sessionmaker(bind=self.engine)
 
     def insert_spot_price(self, spot_price: SpotPrice):
@@ -58,3 +60,20 @@ class Database:
             """)
             result = session.execute(query, {'valuation_date': valuation_date})
             return pd.DataFrame(result.fetchall(), columns=result.keys())
+        
+    def get_four_months_forward_prices(self, valuation_date: datetime):
+        with self.Session() as session:
+            query = text("""
+                SELECT * FROM forward_prices
+                WHERE valuation_date = :valuation_date AND
+                expiry_date BETWEEN :valuation_date AND :four_months_later
+            """)
+                    # 1. Convert the string to a proper datetime object first!
+            val_date_dt = pd.to_datetime(valuation_date)
+            
+            # 2. Use the datetime object for your date math
+            four_months_later = val_date_dt + pd.DateOffset(months=4)
+            result = session.execute(query, {'valuation_date': val_date_dt, 'four_months_later': four_months_later})
+            return pd.DataFrame(result.fetchall(), columns=result.keys())
+        
+db_manager = Database(DATABASE_URL)
