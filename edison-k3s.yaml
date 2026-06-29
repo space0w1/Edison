@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edison-postgres
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Kills the old pod before starting a new one so they don't lock the data folder
+  selector:
+    matchLabels:
+      app: edison-postgres
+  template:
+    metadata:
+      labels:
+        app: edison-postgres
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k3s-worker1
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "edison"
+        - name: POSTGRES_USER
+          value: "edison"
+        - name: POSTGRES_PASSWORD
+          value: "edison_password"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-storage
+        hostPath:
+          path: /mnt/postgres-data # The local folder on k3s-worker1's drive
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: default
+spec:
+  selector:
+    app: edison-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edison-backend
+  namespace: default
+spec:
+  replicas: 2 # You can run multiple backend copies; K8s will load-balance requests
+  selector:
+    matchLabels:
+      app: edison-backend
+  template:
+    metadata:
+      labels:
+        app: edison-backend
+    spec:
+      containers:
+      - name: backend
+        image: edison-backend:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://edison:edison_password@postgres-service:5432/edison"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edison-backend-service
+  namespace: default
+spec:
+  selector:
+    app: edison-backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edison-frontend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: edison-frontend
+  template:
+    metadata:
+      labels:
+        app: edison-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: edison-frontend:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8501
+        env:
+        - name: API_BASE_URL
+          value: "http://edison-backend-service:8000/api/v1/four_months_forwards"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edison-frontend-service
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: edison-frontend
+  ports:
+    - protocol: TCP
+      port: 8501
+      targetPort: 8501
+      nodePort: 30080 # Open access port for your desktop browser
