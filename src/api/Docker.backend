@@ -2,16 +2,20 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies needed for PostgreSQL/psycopg2 compilation if necessary
+# Install system dependencies
 RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
-# 1. FIX: Point to where requirements.txt lives relative to the project root
-COPY src/api/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the requirements file using its actual path
+COPY src/api/requirements.txt ./src/api/requirements.txt
+RUN pip install --no-cache-dir -r ./src/api/requirements.txt
 
-# 2. FIX: Point to your application source code relative to the project root
-COPY src/ ./src
+# This copies EVERYTHING under src/ (including api/, config/, and data/)
+COPY src/ ./src/
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Tell Python that /app is the root directory for resolving imports
+ENV PYTHONPATH=/app
+
+# Fire up the application factory natively
+CMD ["uvicorn", "src.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

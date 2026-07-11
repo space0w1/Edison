@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
+import os
 
 # Set clean styling for the graph
 sns.set_theme(style="darkgrid")
@@ -13,7 +14,7 @@ st.set_page_config(page_title="Edison Curve Dashboard", layout="centered")
 st.title("📈 Edison Forward Curve Dashboard")
 st.markdown("Select a valuation target to fetch and plot the truncated forward curve.")
 
-API_BASE_URL = "http://localhost:8000/api/v1/four_months_forwards"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1/four_months_forwards")
 
 # 1. CREATE A CLEAN SIDE-BY-SIDE MONTH & YEAR PICKER GAUGE
 col1, col2 = st.columns(2)

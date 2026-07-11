@@ -1,9 +1,13 @@
 from datetime import datetime
 
+import os
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from src.config.db_config import DATABASE_URL
+from src.config.db_config import LOCAL_DB
+
+# 2. Grab the DATABASE_URL from the YAML env block. If not found, use local fallback.
+DATABASE_URL = os.getenv("DATABASE_URL", LOCAL_DB)
 
 class Base:
     pass

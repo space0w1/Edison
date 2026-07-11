@@ -68,8 +68,18 @@ spec:
     spec:
       containers:
       - name: backend
-        image: edison-backend:v1
+        image: docker.io/library/edison-backend:v1
         imagePullPolicy: Never
+        # --- THE FIX TO CIRCUMVENT THE DIRECTORY STRUCTURE ---
+        args:
+        - "uvicorn"
+        - "src.api.app:create_app"
+        - "--factory"
+        - "--host"
+        - "0.0.0.0"
+        - "--port"
+        - "8000"
+        # -----------------------------------------------------
         ports:
         - containerPort: 8000
         env:
@@ -82,12 +92,14 @@ metadata:
   name: edison-backend-service
   namespace: default
 spec:
+  type: NodePort
   selector:
     app: edison-backend
   ports:
     - protocol: TCP
       port: 8000
       targetPort: 8000
+      nodePort: 30081
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -106,13 +118,13 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: edison-frontend:v1
+        image: docker.io/library/edison-frontend:v1
         imagePullPolicy: Never
         ports:
         - containerPort: 8501
         env:
         - name: API_BASE_URL
-          value: "http://edison-backend-service:8000/api/v1/four_months_forwards"
+          value: "http://192.168.2.101:30081/api/v1/four_months_forwards"
 ---
 apiVersion: v1
 kind: Service
