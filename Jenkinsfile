@@ -29,7 +29,7 @@ pipeline {
             steps {
                 echo "Building Frontend using ./src/dashboard/Dockerfile.frontend..."
                 // Built from root context so it can access shared files if needed
-                sh "docker build -t ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/dashboard/Dockerfile.frontend ."
+                sh "docker build --load -t ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/dashboard/Dockerfile.frontend ."
                 
                 echo "Pushing Frontend to K3s Registry..."
                 sh "docker push ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG}"
@@ -40,7 +40,7 @@ pipeline {
             steps {
                 echo "Building Backend using ./src/api/Docker.backend..."
                 // Targets your specific custom Dockerfile name
-                sh "docker build -t ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/api/Docker.backend ."
+                sh "docker build --load -t ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/api/Docker.backend ."
                 
                 echo "Pushing Backend to K3s Registry..."
                 sh "docker push ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG}"
