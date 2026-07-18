@@ -76,3 +76,14 @@ if st.button("Fetch and Plot Curve", type="primary"):
                 st.error(f"Failed to fetch data. Server responded with code: {response.status_code}")
         except requests.exceptions.ConnectionError:
             st.error("Could not connect to FastAPI server. Make sure it's running on http://localhost:8000")
+
+# --- Footnote Section ---
+st.markdown("---")
+st.markdown(
+    """
+    <div style="text-align: center; color: gray; font-size: 0.8em;">
+        Data provided by Edison API | Built by space0w1
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
