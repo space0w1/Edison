@@ -68,7 +68,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: docker.io/library/edison-backend:v1
+        image: 192.168.2.100:30500/edison-backend:latest
         imagePullPolicy: Never
         # --- THE FIX TO CIRCUMVENT THE DIRECTORY STRUCTURE ---
         args:
@@ -118,7 +118,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: docker.io/library/edison-frontend:v1
+        image: 192.168.2.100:30500/edison-frontend:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 8501
