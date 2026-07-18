@@ -29,10 +29,10 @@ pipeline {
             steps {
                 echo "Building Frontend using ./src/dashboard/Dockerfile.frontend..."
                 // Built from root context so it can access shared files if needed
-                sh "podman build -t ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/dashboard/Dockerfile.frontend ."
+                sh "docker build -t ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/dashboard/Dockerfile.frontend ."
                 
                 echo "Pushing Frontend to K3s Registry..."
-                sh "podman push ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker push ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
         
@@ -40,10 +40,10 @@ pipeline {
             steps {
                 echo "Building Backend using ./src/api/Docker.backend..."
                 // Targets your specific custom Dockerfile name
-                sh "podman build -t ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/api/Docker.backend ."
+                sh "docker build -t ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG} -f ./src/api/Docker.backend ."
                 
                 echo "Pushing Backend to K3s Registry..."
-                sh "podman push ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker push ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
         
@@ -86,8 +86,8 @@ pipeline {
         always {
             echo "Cleaning up local workspace images..."
             // Deletes the newly built images from your desktop to keep your hard drive clean
-            sh "podman rmi ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG} || true"
-            sh "podman rmi ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG} || true"
+            sh "docker rmi ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG} || true"
+            sh "docker rmi ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG} || true"
         }
     }
 }
