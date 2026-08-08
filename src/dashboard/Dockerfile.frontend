@@ -6,7 +6,7 @@ COPY src/dashboard/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the app script
-COPY src/dashboard/app.py .
+COPY src/dashboard/ .
 
 EXPOSE 8501
 
