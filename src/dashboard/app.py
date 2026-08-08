@@ -1,10 +1,8 @@
+# app.py
 import streamlit as st
-import requests
-import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
-import os
+from api_client import fetch_market_curves
+from data_utils import compile_asymmetric_curves, generate_comparison_plot
 
 # Set clean styling for the graph
 sns.set_theme(style="darkgrid")
@@ -12,70 +10,68 @@ sns.set_theme(style="darkgrid")
 st.set_page_config(page_title="Edison Curve Dashboard", layout="centered")
 
 st.title("📈 Edison Forward Curve Dashboard")
-st.markdown("Select a valuation target to fetch and plot the truncated forward curve.")
+st.markdown("Select a valuation target to compare actual vs. Nelson-Siegel estimated curves.")
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1/four_months_forwards")
-
-# 1. CREATE A CLEAN SIDE-BY-SIDE MONTH & YEAR PICKER GAUGE
+# 1. UI Dropdown Layout Components
 col1, col2 = st.columns(2)
 
 with col1:
-    # List the years matching your database historical records
-    selected_year = st.selectbox("Select Year:", options=[2020, 2021, 2022, 2023, 2024], index=1) # Defaults to 2024
+    selected_year = st.selectbox("Select Year:", options=[2020, 2021, 2022, 2023, 2024], index=1)
 
 with col2:
-    # Mapping readable month strings directly to their padded numerical values
     month_options = {
         "January": "01", "February": "02", "March": "03", "April": "04",
         "May": "05", "June": "06", "July": "07", "August": "08",
         "September": "09", "October": "10", "November": "11", "December": "12"
     }
-    selected_month_name = st.selectbox("Select Month:", options=list(month_options.keys()), index=0) # Defaults to January
+    selected_month_name = st.selectbox("Select Month:", options=list(month_options.keys()), index=0)
 
-# 2. STRIP AWAY THE DAY ENTIRELY AND FORCE IT TO THE 1ST
-# This automatically formats perfectly into 'YYYY-MM-01'
 valuation_date_str = f"{selected_year}-{month_options[selected_month_name]}-01"
+st.info(f"Targeting Parameters: `valuation_date={valuation_date_str}`")
 
-st.info(f"Targeting API Query Parameter: `valuation_date={valuation_date_str}`")
-
-# --- Keep the rest of your original button trigger & plotting script underneath ---
-if st.button("Fetch and Plot Curve", type="primary"):
-    with st.spinner("Fetching data from API..."):
+# 2. Network Synchronisation & Execution Trigger
+if st.button("Fetch and Compare Curves", type="primary"):
+    with st.spinner("Synchronizing asymmetric pipelines from Edison API..."):
         try:
-            response = requests.get(API_BASE_URL, params={"valuation_date": valuation_date_str})
+            payload = fetch_market_curves(valuation_date_str)
             
-            if response.status_code == 200:
-                data = response.json()
-                forwards = data.get("forwards", [])
+            # Catch structural HTTP connection drop-outs early
+            if payload["actual_status"] != 200 or payload["nelson_status"] != 200:
+                st.error(f"Failed API handshake. Actual Route: {payload['actual_status']} | Nelson Route: {payload['nelson_status']}")
+                st.stop()
                 
-                if not forwards:
-                    st.warning(f"No forward curve data found for {valuation_date_str} in the database.")
-                else:
-                    df = pd.DataFrame(forwards)
-                    df["expiry_date"] = pd.to_datetime(df["expiry_date"])
-                    df = df.sort_values("expiry_date")
-                    df["expiry_label"] = df["expiry_date"].dt.strftime("%Y-%m-%d")
-                    
-                    st.success(f"Successfully loaded {len(df)} contract points!")
-                    
-                    st.subheader("Raw Curve Grid")
-                    st.dataframe(df[["id", "commodity", "expiry_label", "price"]].rename(
-                        columns={"expiry_label": "Expiry Date", "price": "Price ($)"}
-                    ), use_container_width=True)
-                    
-                    st.subheader("Forward Curve Visualization")
-                    fig, ax = plt.subplots(figsize=(10, 5))
-                    ax.plot(df["expiry_label"], df["price"], marker="o", linewidth=2.5, color="#1f77b4", label=f"Curve on {valuation_date_str}")
-                    ax.set_title(f"WTI Crude Oil Term Structure ({valuation_date_str})", fontsize=12, fontweight="bold", pad=12)
-                    ax.set_xlabel("Contract Expiry Date", fontsize=10)
-                    ax.set_ylabel("Price ($/BBL)", fontsize=10)
-                    ax.set_ylim(df["price"].min() - 0.5, df["price"].max() + 0.5)
-                    ax.legend()
-                    st.pyplot(fig)
-            else:
-                st.error(f"Failed to fetch data. Server responded with code: {response.status_code}")
-        except requests.exceptions.ConnectionError:
-            st.error("Could not connect to FastAPI server. Make sure it's running on http://localhost:8000")
+            if not payload["nelson_data"]:
+                st.warning(f"No modeled historical calibrations found matching target date: {valuation_date_str}")
+                st.stop()
+
+            # Align inputs through the asymmetric processing engine
+            df_merged = compile_asymmetric_curves(payload["actual_data"], payload["nelson_data"])
+            st.success(f"Successfully compiled curve model array mapping horizon parameters!")
+
+            # Display conditional status notice if the fourth node is isolated
+            if df_merged["price"].isna().any():
+                missing_labels = df_merged[df_merged["price"].isna()]["expiry_label"].tolist()
+                st.warning(f"⚠️ Market prices missing for future dates: {', '.join(missing_labels)}. Displaying Nelson-Siegel extrapolation path.")
+
+            # --- Dataframe View ---
+            st.subheader("Raw Curve Grid Comparison")
+            # Present NaN entries elegantly using Streamlit's built-in empty field rendering
+            display_df = df_merged[["commodity", "expiry_label", "price", "estimated_price"]].rename(
+                columns={
+                    "expiry_label": "Expiry Date", 
+                    "price": "Actual Price ($)", 
+                    "estimated_price": "NS Estimated Price ($)"
+                }
+            )
+            st.dataframe(display_df, use_container_width=True)
+            
+            # --- Graph View ---
+            st.subheader("Forward Curve Comparison Model")
+            fig = generate_comparison_plot(df_merged, valuation_date_str)
+            st.pyplot(fig)
+
+        except ConnectionError as ce:
+            st.error(str(ce))
 
 # --- Footnote Section ---
 st.markdown("---")

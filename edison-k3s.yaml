@@ -124,7 +124,7 @@ spec:
         - containerPort: 8501
         env:
         - name: API_BASE_URL
-          value: "http://192.168.2.101:30081/api/v1/four_months_forwards"
+          value: "http://192.168.2.101:30081/api/v1"
 ---
 apiVersion: v1
 kind: Service

@@ -65,6 +65,15 @@ class Database:
             result = session.execute(query, {'valuation_date': valuation_date})
             return pd.DataFrame(result.fetchall(), columns=result.keys())
         
+    def get_nelson_siegel_parameters(self, valuation_date: datetime):
+        with self.Session() as session:
+            query = text("""
+                SELECT beta0, beta1, beta2, lmbda FROM nelson_siegel_parameters
+                WHERE valuation_date = :valuation_date
+            """)
+            result = session.execute(query, {'valuation_date': valuation_date})
+            return pd.DataFrame(result.fetchall(), columns=result.keys())
+        
     def get_four_months_forward_prices(self, valuation_date: datetime):
         with self.Session() as session:
             query = text("""
