@@ -74,6 +74,28 @@ class Database:
             result = session.execute(query, {'valuation_date': valuation_date})
             return pd.DataFrame(result.fetchall(), columns=result.keys())
         
+    def get_all_nelson_siegel_parameters(self, commodity: str) -> pd.DataFrame:
+        with self.Session() as session:
+            query = text("""
+                SELECT valuation_date, commodity, beta0, beta1, beta2, lmbda
+                FROM nelson_siegel_parameters
+                WHERE commodity = :commodity
+                ORDER BY valuation_date ASC
+            """)
+            result = session.execute(query, {'commodity': commodity})
+            return pd.DataFrame(result.fetchall(), columns=result.keys())
+
+    def get_all_forward_prices(self, commodity: str) -> pd.DataFrame:
+        with self.Session() as session:
+            query = text("""
+                SELECT valuation_date, commodity, expiry_date, price
+                FROM forward_prices
+                WHERE commodity = :commodity
+                ORDER BY valuation_date ASC
+            """)
+            result = session.execute(query, {'commodity': commodity})
+            return pd.DataFrame(result.fetchall(), columns=result.keys())
+
     def get_four_months_forward_prices(self, valuation_date: datetime):
         with self.Session() as session:
             query = text("""

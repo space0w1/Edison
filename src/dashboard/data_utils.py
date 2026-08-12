@@ -67,3 +67,22 @@ def generate_comparison_plot(df: pd.DataFrame, valuation_date_str: str):
     
     ax.legend(loc="best")
     return fig
+
+def generate_pnl_plot(df: pd.DataFrame):
+    """Plots cumulative backtest PnL over time, one line per tenor."""
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    for tenor_label, group in df.groupby("tenor"):
+        group = group.sort_values("valuation_date")
+        ax.plot(
+            group["valuation_date"], group["cumulative_pnl"],
+            marker="o", linewidth=2.0, label=f"{tenor_label} Strategy"
+        )
+
+    ax.axhline(0, color="gray", linewidth=1, linestyle="--")
+    ax.set_title("Cumulative Strategy PnL: Nelson-Siegel Signal vs Actual Curve", fontsize=12, fontweight="bold", pad=12)
+    ax.set_xlabel("Valuation Date", fontsize=10)
+    ax.set_ylabel("Cumulative PnL ($/BBL)", fontsize=10)
+    ax.legend(loc="best")
+    fig.autofmt_xdate()
+    return fig
