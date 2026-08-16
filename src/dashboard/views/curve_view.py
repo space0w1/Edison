@@ -76,7 +76,7 @@ st.markdown("---")
 st.markdown(
     """
     <div style="text-align: center; color: gray; font-size: 0.8em;">
-        Data provided by Edison API | Built by spaceowl
+        Data provided by Edison API | Built by space0w1
     </div>
     """,
     unsafe_allow_html=True
