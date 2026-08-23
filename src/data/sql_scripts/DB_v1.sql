@@ -14,3 +14,13 @@ CREATE TABLE forward_prices (
     expiry_date TIMESTAMP NOT NULL,
     price FLOAT NOT NULL
 );
+
+CREATE TABLE nelson_siegel_parameters (
+    id SERIAL PRIMARY KEY,
+    valuation_date TIMESTAMP NOT NULL,
+    commodity VARCHAR(255) NOT NULL,
+    beta0 FLOAT NOT NULL,
+    beta1 FLOAT NOT NULL,
+    beta2 FLOAT NOT NULL,
+    lmbda FLOAT NOT NULL
+);
