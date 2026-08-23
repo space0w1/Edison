@@ -59,16 +59,16 @@ pipeline {
                         git clone https://${GIT_USER}:${GIT_TOKEN}@${GITOPS_REPO_URL} gitops-dir
                         cd gitops-dir
                         
-                        # Dynamically update the tags inside the 'apps/' folder manifest
-                        sed -i 's|image: ${REGISTRY}/${FE_IMAGE_NAME}:.*|image: ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG}|g' apps/edison-k3s.yaml
-                        sed -i 's|image: ${REGISTRY}/${BE_IMAGE_NAME}:.*|image: ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG}|g' apps/edison-k3s.yaml
-                        
+                        # Dynamically update the tags inside the 'apps/edison/' folder manifest
+                        sed -i 's|image: ${REGISTRY}/${FE_IMAGE_NAME}:.*|image: ${REGISTRY}/${FE_IMAGE_NAME}:${IMAGE_TAG}|g' apps/edison/edison-k3s.yaml
+                        sed -i 's|image: ${REGISTRY}/${BE_IMAGE_NAME}:.*|image: ${REGISTRY}/${BE_IMAGE_NAME}:${IMAGE_TAG}|g' apps/edison/edison-k3s.yaml
+
                         # Configure automation identity
                         git config user.name "Jenkins CI"
                         git config user.email "jenkins@home.lab"
-                        
+
                         # Stage, commit, and push changes back
-                        git add apps/edison-k3s.yaml
+                        git add apps/edison/edison-k3s.yaml
                         
                         if ! git diff-index --quiet HEAD; then
                             git commit -m "Jenkins CI: Update Edison images to ${IMAGE_TAG} [skip ci]"
